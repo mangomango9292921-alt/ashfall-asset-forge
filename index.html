@@ -30,9 +30,8 @@ section{display:flex;flex-direction:column;gap:8px}
 .drop:focus-within{outline:2px solid var(--ember);outline-offset:2px}
 .drop img{max-height:150px;border-radius:4px;image-rendering:pixelated}
 .drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.tabs{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.tabs button{border:0;border-radius:0;padding:9px 6px;font:600 13px var(--body);background:transparent;color:var(--fg);cursor:pointer}
-.tabs button+button{border-left:1px solid var(--line)}
+.tabs{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.tabs button{border:0;border-radius:0;padding:9px 6px;font:600 13px var(--body);background:var(--panel);color:var(--fg);cursor:pointer}
 .tabs button[aria-selected="true"]{background:var(--ember);color:var(--ember-ink)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font:500 13px var(--body);color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
@@ -50,6 +49,15 @@ button:focus-visible,.chip:focus-visible,textarea:focus-visible,select:focus-vis
 .slider label{font-size:13px}
 .slider output{font:12px var(--mono);color:var(--muted)}
 .slider input{grid-column:1/-1;width:100%;accent-color:var(--ember)}
+.checks{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 10px;font-size:13px}
+.checks label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.checks input{accent-color:var(--ember);width:16px;height:16px}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.swatches label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.swatches input{width:100%;height:30px;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--bg);cursor:pointer}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+details[open]{display:flex;flex-direction:column;gap:8px}
+summary{cursor:pointer;font-weight:600;font-size:13px}
 ol.steps{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 .status{font-size:13px;color:var(--muted);min-height:1.3em}
 .status.err{color:var(--bad)}.status.ok{color:var(--ok)}
@@ -75,7 +83,7 @@ ol.steps{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:fl
 <body>
 <header>
   <h1>Ashfall Asset Forge</h1>
-  <p>Picture in, game asset out. Free, runs in your browser, exports .glb.</p>
+  <p>Picture in, game asset out. Avatars, voxel models, terrain and more. Free, runs in your browser, exports .glb.</p>
 </header>
 
 <main>
@@ -91,14 +99,70 @@ ol.steps{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:fl
     <section>
       <span class="label">2 · How to build it</span>
       <div class="tabs" role="tablist">
-        <button role="tab" id="tVoxel" aria-selected="true">Voxel</button>
+        <button role="tab" id="tAvatar" aria-selected="true">Avatar</button>
+        <button role="tab" id="tVoxel" aria-selected="false">Voxel</button>
         <button role="tab" id="tTerrain" aria-selected="false">Terrain</button>
         <button role="tab" id="tClaude" aria-selected="false">With Claude</button>
       </div>
     </section>
 
+    <!-- AVATAR -->
+    <section id="pAvatar">
+      <p class="help">A game-ready character with a real skeleton and four animations (Idle, Walk, Run, Wave). It loads straight into three.js, Unity or Godot ready to move.</p>
+      <details id="avClaude">
+        <summary>Match my picture with Claude (best)</summary>
+        <ol class="steps">
+          <li>Press <b>Copy prompt</b>.</li>
+          <li>Paste it into Claude at claude.ai and attach your character picture.</li>
+          <li>Paste Claude's reply below and press <b>Apply</b>.</li>
+        </ol>
+        <button id="avCopy">Copy prompt</button>
+        <textarea id="avPromptBox" class="code" hidden readonly aria-label="Prompt to copy"></textarea>
+        <textarea id="avPaste" class="code" placeholder='Paste Claude&apos;s reply here: {"name": …, "colors": { … }}'></textarea>
+        <button class="primary" id="avApply">Apply</button>
+      </details>
+      <button id="avPick">Pick colors from my picture</button>
+      <input type="text" id="avName" value="Ashfall Hero" aria-label="Avatar name">
+      <div class="slider"><label for="avHeight">Height</label><output id="avHeightO"></output><input type="range" id="avHeight" min="1.2" max="2.2" step="0.01" value="1.75"></div>
+      <div class="slider"><label for="avBuild">Build</label><output id="avBuildO"></output><input type="range" id="avBuild" min="0" max="100" step="1" value="50"></div>
+      <div class="slider"><label for="avHead">Head size</label><output id="avHeadO"></output><input type="range" id="avHead" min="0.8" max="2.2" step="0.05" value="1"></div>
+      <div class="slider"><label for="avLegs">Legs</label><output id="avLegsO"></output><input type="range" id="avLegs" min="0.8" max="1.2" step="0.01" value="1"></div>
+      <div class="row">
+        <select id="avHair" aria-label="Hair"><option value="none">Bald</option><option value="short" selected>Short hair</option><option value="long">Long hair</option><option value="spiky">Spiky hair</option><option value="ponytail">Ponytail</option><option value="mohawk">Mohawk</option></select>
+        <select id="avSleeves" aria-label="Sleeves"><option value="none">Sleeveless</option><option value="short" selected>Short sleeves</option><option value="long">Long sleeves</option></select>
+      </div>
+      <div class="row">
+        <select id="avLegwear" aria-label="Legwear"><option value="pants" selected>Pants</option><option value="shorts">Shorts</option><option value="skirt">Skirt</option></select>
+        <select id="avFoot" aria-label="Footwear"><option value="shoes">Shoes</option><option value="boots" selected>Boots</option></select>
+      </div>
+      <div class="checks">
+        <label><input type="checkbox" id="acc_helmet"> Helmet</label>
+        <label><input type="checkbox" id="acc_cape" checked> Cape</label>
+        <label><input type="checkbox" id="acc_pads" checked> Shoulder pads</label>
+        <label><input type="checkbox" id="acc_belt" checked> Belt</label>
+        <label><input type="checkbox" id="acc_backpack"> Backpack</label>
+      </div>
+      <div class="swatches">
+        <label>Skin<input type="color" id="c_skin" value="#c8916b"></label>
+        <label>Hair<input type="color" id="c_hair" value="#3b2a20"></label>
+        <label>Eyes<input type="color" id="c_eyes" value="#26262e"></label>
+        <label>Top<input type="color" id="c_shirt" value="#8a3324"></label>
+        <label>Legs<input type="color" id="c_pants" value="#3d3a45"></label>
+        <label>Shoes<input type="color" id="c_shoes" value="#2a211c"></label>
+        <label>Accent<input type="color" id="c_accent" value="#c9a24a"></label>
+      </div>
+      <span class="label">Animation preview</span>
+      <div class="chips" id="anims">
+        <button class="chip" data-anim="Idle" aria-pressed="true">Idle</button>
+        <button class="chip" data-anim="Walk" aria-pressed="false">Walk</button>
+        <button class="chip" data-anim="Run" aria-pressed="false">Run</button>
+        <button class="chip" data-anim="Wave" aria-pressed="false">Wave</button>
+        <button class="chip" data-anim="Still" aria-pressed="false">Still</button>
+      </div>
+    </section>
+
     <!-- VOXEL -->
-    <section id="pVoxel">
+    <section id="pVoxel" hidden>
       <p class="help">Turns the picture into a chunky 3D voxel model, like Minecraft or MagicaVoxel. Best with pixel art, sprites and icons on a plain or transparent background.</p>
       <div class="slider"><label for="vRes">Detail</label><output id="vResO"></output><input type="range" id="vRes" min="12" max="128" step="1" value="48"></div>
       <div class="slider"><label for="vDepth">Thickness</label><output id="vDepthO"></output><input type="range" id="vDepth" min="1" max="40" step="1" value="6"></div>
@@ -162,7 +226,7 @@ ol.steps{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:fl
         <button id="saveJson">Download .json</button>
       </div>
       <button id="copyJson">Copy parts JSON</button>
-      <p class="help">.glb loads in three.js, Unity, Godot and Blender. .json is the editable parts list for Claude models.</p>
+      <p class="help">.glb loads in three.js, Unity, Godot and Blender. Avatars keep their skeleton and animations. .json saves the settings so you can rebuild or edit the model later.</p>
     </section>
 
     <section>
@@ -173,7 +237,7 @@ ol.steps{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:fl
 
   <div id="stage">
     <div class="hud">
-      <div class="tag" id="nameTag"><b>Ember Sentinel</b>example</div>
+      <div class="tag" id="nameTag"><b>Ashfall Hero</b>avatar</div>
       <div class="viewbtns">
         <button class="chip" id="vWire" aria-pressed="false">Wireframe</button>
         <button class="chip" id="vSpin" aria-pressed="true">Spin</button>
@@ -189,6 +253,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
 const $=id=>document.getElementById(id);
 const say=(t,cls='')=>{const s=$('status');s.textContent=t;s.className='status '+cls};
@@ -273,9 +338,9 @@ function frame(obj){
   const gs=Math.pow(10,Math.ceil(Math.log10(Math.max(size.x,size.z,0.1)*2.5)));
   grid=new THREE.GridHelper(gs,20,0x8a6a58,0x6a5a50);grid.material.transparent=true;grid.material.opacity=.3;grid.position.y=box.min.y-0.001;scene.add(grid);
 }
-function show(group,spec,label){
+function show(group,spec,label,keepCam){
   if(current){scene.remove(current);current.traverse(o=>o.geometry?.dispose())}
-  current=group;currentSpec=spec;currentName=group.name||'asset';scene.add(group);frame(group);applyWire();
+  current=group;currentSpec=spec;currentName=group.name||'asset';scene.add(group);if(!keepCam)frame(group);applyWire();if(!group.userData.clips)mixer=null;
   const t=$('nameTag');t.innerHTML='';const b=document.createElement('b');b.textContent=currentName;t.append(b,document.createTextNode(label||''));
   info();
 }
@@ -291,11 +356,10 @@ $('vSpin').setAttribute('aria-pressed',ctl.autoRotate);
 $('vSpin').onclick=e=>{ctl.autoRotate=!ctl.autoRotate;e.currentTarget.setAttribute('aria-pressed',ctl.autoRotate)};
 function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
 new ResizeObserver(resize).observe(stage);resize();
-renderer.setAnimationLoop(()=>{ctl.update();renderer.render(scene,cam)});
-show(buildFromSpec(EXAMPLE),EXAMPLE,'example');
+renderer.setAnimationLoop(()=>{const dt=clock.getDelta();mixer?.update(dt);ctl.update();renderer.render(scene,cam)});
 
 /* ---------- tabs ---------- */
-const TABS={tVoxel:'pVoxel',tTerrain:'pTerrain',tClaude:'pClaude'};
+const TABS={tAvatar:'pAvatar',tVoxel:'pVoxel',tTerrain:'pTerrain',tClaude:'pClaude'};
 for(const t in TABS)$(t).onclick=()=>{for(const k in TABS){$(k).setAttribute('aria-selected',k===t);$(TABS[k]).hidden=k!==t}};
 
 /* ---------- picture input ---------- */
@@ -433,7 +497,7 @@ Look at the picture I attached and build a 3D model of it out of simple primitiv
 
 ASSET TYPE: ${SCALE[kind]}
 
-COORDINATES: meters. Y is up. The asset stands on the ground (lowest point at y=0), centered on x=0, z=0. Front faces +Z, the asset's left side is -X.
+COORDINATES: meters. Y is up. The asset stands on the ground (lowest point at y=0), centered on x=0, z=0. Front faces +Z, the asset's own left side is +X.
 Every part: "pos" is the CENTER of the shape, "size" is [width X, height Y, depth Z], "rot" is [x,y,z] rotation in degrees (optional).
 
 SHAPES: "box", "cylinder" (vertical; optional "taper" = top radius ÷ bottom radius), "cone" (point up), "sphere" (ellipsoid when size is uneven), "wedge" (ramp: full height at -Z sloping to zero at +Z; roofs, blades), "torus" (ring in the XY plane).
@@ -466,6 +530,219 @@ $('goPaste').onclick=()=>{
   show(buildFromSpec(spec),spec,' '+(spec.kind||''));say(`Built ${spec.name}: ${spec.parts.length} parts.`,'ok');
 };
 
+/* ---------- avatar maker: rigged + animated humanoid ---------- */
+const AV_DEFAULT={name:'Ashfall Hero',height:1.75,build:50,head:1.0,legs:1.0,hair:'short',sleeves:'short',legwear:'pants',footwear:'boots',
+  acc:{helmet:false,cape:true,pads:true,belt:true,backpack:false},
+  colors:{skin:'#c8916b',hair:'#3b2a20',eyes:'#26262e',shirt:'#8a3324',pants:'#3d3a45',shoes:'#2a211c',accent:'#c9a24a'}};
+const AV_ACC=['helmet','cape','pads','belt','backpack'];
+const AV_COLORS=['skin','hair','eyes','shirt','pants','shoes','accent'];
+const AV_ENUM={hair:['none','short','long','spiky','ponytail','mohawk'],sleeves:['none','short','long'],legwear:['pants','shorts','skirt'],footwear:['shoes','boots']};
+
+function avRead(){
+  const st={name:$('avName').value.trim()||'Avatar',height:+$('avHeight').value,build:+$('avBuild').value,head:+$('avHead').value,legs:+$('avLegs').value,
+    hair:$('avHair').value,sleeves:$('avSleeves').value,legwear:$('avLegwear').value,footwear:$('avFoot').value,acc:{},colors:{}};
+  for(const a of AV_ACC)st.acc[a]=$('acc_'+a).checked;
+  for(const c of AV_COLORS)st.colors[c]=$('c_'+c).value;
+  return st;
+}
+function avWrite(st){
+  $('avName').value=st.name;$('avHeight').value=st.height;$('avBuild').value=st.build;$('avHead').value=st.head;$('avLegs').value=st.legs;
+  $('avHair').value=st.hair;$('avSleeves').value=st.sleeves;$('avLegwear').value=st.legwear;$('avFoot').value=st.footwear;
+  for(const a of AV_ACC)$('acc_'+a).checked=!!st.acc[a];
+  for(const c of AV_COLORS)$('c_'+c).value=st.colors[c];
+  for(const id of ['avHeight','avBuild','avHead','avLegs'])$(id).dispatchEvent(new Event('input'));
+}
+function avSanitize(j){
+  const d=structuredClone(AV_DEFAULT);if(!j||typeof j!=='object')return null;
+  d.name=String(j.name||d.name).slice(0,40);
+  d.height=clamp(j.height,1.2,2.2,d.height);d.build=clamp(j.build,0,100,d.build);d.head=clamp(j.head,0.8,2.2,d.head);d.legs=clamp(j.legs,0.8,1.2,d.legs);
+  for(const k in AV_ENUM)if(AV_ENUM[k].includes(j[k]))d[k]=j[k];
+  for(const a of AV_ACC)if(j.acc&&a in j.acc)d.acc[a]=!!j.acc[a];
+  const hex=/^#[0-9a-f]{6}$/i;for(const c of AV_COLORS)if(j.colors&&hex.test(j.colors[c]))d.colors[c]=j.colors[c].toLowerCase();
+  return d;
+}
+
+function buildAvatar(st){
+  const L=st.legs,s=st.head,w=0.85+0.35*(st.build/100);
+  const ankle=.07,knee=ankle+.42*L,hip=knee+.42*L,pelvisTop=hip+.09,waistTop=pelvisTop+.14,chestTop=waistTop+.26,neckTop=chestTop+.06,headH=.25*s;
+  const capTop=st.acc.helmet?.05*s:(st.hair==='none'?0:st.hair==='mohawk'?.09*s:st.hair==='spiky'?.07*s:.03*s);
+  const k=st.height/(neckTop+headH+capTop);
+  const shY=chestTop-.05,shX=.18*w+.045,hipX=.085*w;
+  const C={};for(const c of AV_COLORS)C[c]=new THREE.Color(st.colors[c]);
+  const mouth=C.skin.clone().multiplyScalar(.5);
+
+  const BONES=[['Hips',null,[0,hip,0]],['Spine','Hips',[0,pelvisTop,0]],['Chest','Spine',[0,waistTop,0]],['Neck','Chest',[0,chestTop,0]],['Head','Neck',[0,neckTop,0]]];
+  for(const [side,x] of [['Left',shX],['Right',-shX]])BONES.push([side+'UpperArm','Chest',[x,shY,0]],[side+'LowerArm',side+'UpperArm',[x,shY-.29,0]],[side+'Hand',side+'LowerArm',[x,shY-.55,0]]);
+  for(const [side,x] of [['Left',hipX],['Right',-hipX]])BONES.push([side+'UpperLeg','Hips',[x,hip,0]],[side+'LowerLeg',side+'UpperLeg',[x,knee,0]],[side+'Foot',side+'LowerLeg',[x,ankle,0]]);
+  const bones={},world={},list=[],index={};
+  for(const [n,p,wp] of BONES){const b=new THREE.Bone();b.name=n;const pw=p?world[p]:[0,0,0];
+    b.position.set((wp[0]-pw[0])*k,(wp[1]-pw[1])*k,(wp[2]-pw[2])*k);if(p)bones[p].add(b);bones[n]=b;world[n]=wp;index[n]=list.length;list.push(b)}
+
+  const parts=[];
+  const add=(bone,color,g)=>parts.push({g,bone,color});
+  const box=(bone,color,sx,sy,sz,x,y,z,rx=0,ry=0,rz=0)=>{const g=new THREE.BoxGeometry(sx,sy,sz);if(rx||ry||rz)g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx,ry,rz)));g.translate(x,y,z);add(bone,color,g)};
+  const cyl=(bone,color,rt,rb,h,x,y,z,seg=8,rx=0,rz=0)=>{const g=new THREE.CylinderGeometry(rt,rb,h,seg);if(rx||rz)g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx,0,rz)));g.translate(x,y,z);add(bone,color,g)};
+  const cone=(bone,color,r,h,x,y,z,rx,rz)=>{const g=new THREE.ConeGeometry(r,h,5);g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(rx,0,rz)));g.translate(x,y,z);add(bone,color,g)};
+
+  // legs and feet
+  for(const [side,x] of [['Left',hipX],['Right',-hipX]]){
+    const upC=st.legwear==='skirt'?C.skin:C.pants, loC=st.legwear==='pants'?C.pants:C.skin;
+    box(side+'UpperLeg',upC,.125*w,.42*L+.03,.135,x,(knee+hip)/2,0);
+    box(side+'LowerLeg',loC,.105*w,.42*L,.115,x,(ankle+knee)/2,0);
+    if(st.legwear==='shorts')box(side+'UpperLeg',C.pants,.135*w,.2*L,.145,x,hip-.1*L,0);
+    if(st.footwear==='boots')box(side+'LowerLeg',C.shoes,.125*w,.17,.135,x,ankle+.085,0);
+    box(side+'Foot',C.shoes,.115*w,.075,.25,x,.0375,.035);
+  }
+  // torso
+  box('Hips',C.pants,.30*w,pelvisTop-hip+.06,.18,0,(hip-.06+pelvisTop)/2,0);
+  if(st.legwear==='skirt')cyl('Hips',C.pants,.165*w,.215*w,.30*L,0,hip-.07,0,8);
+  box('Spine',C.shirt,.27*w,waistTop-pelvisTop+.01,.165,0,(pelvisTop+waistTop)/2,0);
+  box('Chest',C.shirt,.36*w,chestTop-waistTop,.2,0,(waistTop+chestTop)/2,0);
+  box('Neck',C.skin,.08,neckTop-chestTop+.03,.085,0,(chestTop+neckTop)/2,0);
+  // arms
+  for(const [side,x] of [['Left',shX],['Right',-shX]]){
+    box(side+'UpperArm',st.sleeves==='none'?C.skin:C.shirt,.09*w,.32,.095,x,shY-.13,0);
+    box(side+'LowerArm',st.sleeves==='long'?C.shirt:C.skin,.08*w,.27,.085,x,shY-.42,0);
+    box(side+'Hand',C.skin,.075,.095,.05,x,shY-.6,0);
+    if(st.acc.pads)box(side+'UpperArm',C.accent,.13*w,.07,.14,x+(x>0?.01:-.01),shY+.03,0);
+  }
+  // head and face
+  const hw=.21*s,hd=.23*s,hb=neckTop,ht=neckTop+headH,fz=hd/2+.004;
+  box('Head',C.skin,hw,headH,hd,0,hb+headH/2,0);
+  for(const x of [.05*s,-.05*s]){
+    box('Head',C.eyes,.035*s,.04*s,.012,x,hb+headH*.48,fz);
+    box('Head',C.hair,.05*s,.012*s,.012,x,hb+headH*.62,fz);
+  }
+  box('Head',C.skin,.026*s,.04*s,.03,0,hb+headH*.38,fz+.008);
+  box('Head',mouth,.06*s,.012*s,.012,0,hb+headH*.24,fz);
+  // hair
+  const cap=()=>{box('Head',C.hair,hw+.02*s,headH*.3,hd+.02*s,0,ht-headH*.13,0);
+    box('Head',C.hair,hw+.02*s,headH*.65,.04*s,0,ht-headH*.32,-hd/2-.01*s);
+    box('Head',C.hair,hw+.02*s,headH*.1,.03*s,0,ht-headH*.2,hd/2+.006)};
+  if(st.acc.helmet){
+    box('Head',C.accent,hw+.04*s,headH*.45,hd+.04*s,0,ht-headH*.2,0);
+    box('Head',C.accent,.03*s,.05*s,hd*.85,0,ht+.025*s,0);
+    if(st.hair==='long')box('Head',C.hair,hw+.03*s,headH*.9,.05*s,0,ht-headH*.75,-hd/2-.02*s);
+  }else switch(st.hair){
+    case 'short':cap();break;
+    case 'long':cap();box('Head',C.hair,hw+.03*s,headH*1.3,.05*s,0,ht-headH*.65,-hd/2-.02*s);
+      for(const x of [1,-1])box('Head',C.hair,.03*s,headH*.9,hd*.6,x*(hw/2+.015*s),ht-headH*.45,-hd*.15);break;
+    case 'spiky':cap();
+      for(const [x,z,rx,rz] of [[0,0,0,0],[.06,.05,.4,-.4],[-.06,.05,.4,.4],[.06,-.05,-.4,-.4],[-.06,-.05,-.4,.4],[0,.08,.6,0],[0,-.08,-.6,0]])
+        cone('Head',C.hair,.04*s,.1*s,x*s,ht+.03*s,z*s,rx,rz);break;
+    case 'ponytail':cap();cyl('Head',C.hair,.03*s,.04*s,headH*.8,0,ht-headH*.55,-hd/2-.07*s,6,.35,0);break;
+    case 'mohawk':box('Head',C.hair,.045*s,.09*s,hd*.9,0,ht+.045*s,0);break;
+  }
+  // accessories
+  if(st.acc.belt)box('Hips',C.accent,.31*w,.04,.19,0,pelvisTop-.02,0);
+  if(st.acc.backpack)box('Chest',C.accent,.26*w,.3,.12,0,(waistTop+chestTop)/2,-.165);
+  if(st.acc.cape){const bot=hip-.15;box('Chest',C.accent,.36*w,chestTop-bot,.02,0,(chestTop+bot)/2,st.acc.backpack?-.24:-.115)}
+
+  // merge into one skinned mesh (each part follows exactly one bone)
+  const geos=parts.map(({g,bone,color})=>{
+    g.scale(k,k,k);const ng=g.index?g.toNonIndexed():g;ng.deleteAttribute('uv');
+    const n=ng.attributes.position.count,col=new Float32Array(n*3),si=new Uint16Array(n*4),sw=new Float32Array(n*4);
+    for(let i=0;i<n;i++){col[i*3]=color.r;col[i*3+1]=color.g;col[i*3+2]=color.b;si[i*4]=index[bone];sw[i*4]=1}
+    ng.setAttribute('color',new THREE.BufferAttribute(col,3));ng.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(si,4));ng.setAttribute('skinWeight',new THREE.BufferAttribute(sw,4));
+    return ng;
+  });
+  const geo=mergeGeometries(geos);
+  const mesh=new THREE.SkinnedMesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.8,metalness:0,flatShading:true}));
+  mesh.name=st.name+'_mesh';mesh.frustumCulled=false;mesh.material.name='avatar';
+  const group=new THREE.Group();group.name=st.name;group.add(bones.Hips);group.add(mesh);
+  group.updateMatrixWorld(true);
+  const skeleton=new THREE.Skeleton(list);mesh.bind(skeleton);
+  group.userData.skeleton=skeleton;group.userData.clips=avatarClips(hip*k,k);group.userData.avatar=st;
+  return group;
+}
+
+function avatarClips(hipY,k){
+  const q=new THREE.Quaternion(),e=new THREE.Euler();
+  const rot=(bone,dur,fn,n=24)=>{const t=[],v=[];for(let i=0;i<=n;i++){const p=i/n*Math.PI*2;q.setFromEuler(e.set(...fn(p)));t.push(i/n*dur);v.push(q.x,q.y,q.z,q.w)}return new THREE.QuaternionKeyframeTrack(bone+'.quaternion',t,v)};
+  const bob=(dur,fn,n=24)=>{const t=[],v=[];for(let i=0;i<=n;i++){const p=i/n*Math.PI*2;t.push(i/n*dur);v.push(0,hipY+fn(p)*k,0)}return new THREE.VectorKeyframeTrack('Hips.position',t,v)};
+  const S=Math.sin,Cs=Math.cos,M=Math.max;
+  const idle=(d)=>[rot('Chest',d,p=>[.025*S(p),0,0]),rot('Head',d,p=>[0,.08*S(p),0]),rot('LeftUpperArm',d,p=>[0,0,.1+.03*S(p)]),rot('RightUpperArm',d,p=>[0,0,-.1-.03*S(p)]),
+    rot('LeftLowerArm',d,()=>[-.1,0,0]),rot('RightLowerArm',d,()=>[-.1,0,0])];
+  const walk=d=>[rot('LeftUpperLeg',d,p=>[-.5*S(p),0,0]),rot('RightUpperLeg',d,p=>[.5*S(p),0,0]),
+    rot('LeftLowerLeg',d,p=>[.6*M(0,Cs(p)),0,0]),rot('RightLowerLeg',d,p=>[.6*M(0,-Cs(p)),0,0]),
+    rot('LeftUpperArm',d,p=>[.45*S(p),0,.08]),rot('RightUpperArm',d,p=>[-.45*S(p),0,-.08]),
+    rot('LeftLowerArm',d,()=>[-.25,0,0]),rot('RightLowerArm',d,()=>[-.25,0,0]),
+    rot('Chest',d,p=>[0,.08*S(p),0]),bob(d,p=>-.015*Math.abs(S(p)))];
+  const run=d=>[rot('LeftUpperLeg',d,p=>[-.9*S(p),0,0]),rot('RightUpperLeg',d,p=>[.9*S(p),0,0]),
+    rot('LeftLowerLeg',d,p=>[.2+1.1*M(0,Cs(p)),0,0]),rot('RightLowerLeg',d,p=>[.2+1.1*M(0,-Cs(p)),0,0]),
+    rot('LeftUpperArm',d,p=>[.8*S(p),0,.1]),rot('RightUpperArm',d,p=>[-.8*S(p),0,-.1]),
+    rot('LeftLowerArm',d,()=>[-1.2,0,0]),rot('RightLowerArm',d,()=>[-1.2,0,0]),
+    rot('Spine',d,()=>[.18,0,0]),rot('Chest',d,p=>[0,.12*S(p),0]),bob(d,p=>-.04*Math.abs(S(p)))];
+  const wave=d=>[...idle(d).filter(t=>!t.name.startsWith('Right')),rot('RightUpperArm',d,()=>[0,0,-2.6]),rot('RightLowerArm',d,p=>[0,0,-.2+.5*S(p*2)])];
+  return [new THREE.AnimationClip('Idle',3,idle(3)),new THREE.AnimationClip('Walk',1,walk(1)),new THREE.AnimationClip('Run',.6,run(.6)),new THREE.AnimationClip('Wave',1.6,wave(1.6))];
+}
+
+/* animation preview */
+const clock=new THREE.Clock();
+let mixer=null,curAnim='Idle';
+function startMixer(group){
+  mixer=group.userData.clips?new THREE.AnimationMixer(group):null;playAnim(curAnim);
+}
+function playAnim(n){
+  curAnim=n;for(const b of $('anims').querySelectorAll('.chip'))b.setAttribute('aria-pressed',b.dataset.anim===n);
+  if(!mixer)return;mixer.stopAllAction();
+  if(n==='Still'){current.userData.skeleton.pose();return}
+  const c=current.userData.clips.find(c=>c.name===n);if(c)mixer.clipAction(c).play();
+}
+for(const b of $('anims').querySelectorAll('.chip'))b.onclick=()=>playAnim(b.dataset.anim);
+
+let avQueued=false,avKeep=true;
+function avRebuild(keepCam){
+  avKeep=avKeep&&keepCam;if(avQueued)return;avQueued=true;
+  requestAnimationFrame(()=>{avQueued=false;const keep=avKeep;avKeep=true;
+    try{show(buildAvatar(avRead()),null,' rigged · 4 animations',keep);startMixer(current)}catch(e){console.error(e);say('Could not build the avatar: '+e.message,'err')}});
+}
+bind('avHeight','avHeightO',v=>(+v).toFixed(2)+' m');bind('avBuild','avBuildO',v=>v<30?'slim':v>70?'bulky':'average');
+bind('avHead','avHeadO',v=>v>=1.6?'chibi':v>=1.25?'big':'realistic');bind('avLegs','avLegsO',v=>v<.95?'short':v>1.05?'long':'normal');
+for(const el of $('pAvatar').querySelectorAll('input,select'))if(!el.closest('#avClaude'))el.addEventListener('input',()=>avRebuild(true));
+
+/* colors from a full-body picture */
+$('avPick').onclick=async()=>{
+  if(!imageFile){say('Add a full-body, front-facing picture first.','err');return}
+  const {w,h,px}=await readPixels(imageFile,160);
+  let hasAlpha=false;for(let i=3;i<px.length;i+=4)if(px[i]<250){hasAlpha=true;break}
+  const cs=[0,w-1,(h-1)*w,(h-1)*w+w-1].map(i=>[px[i*4],px[i*4+1],px[i*4+2]]);const bg=cs.reduce((a,c)=>a.map((v,j)=>v+c[j]/4),[0,0,0]);
+  const fg=i=>px[i*4+3]>=128&&(hasAlpha||Math.hypot(px[i*4]-bg[0],px[i*4+1]-bg[1],px[i*4+2]-bg[2])>=40);
+  let x0=w,x1=-1,y0=h,y1=-1;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(fg(y*w+x)){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)}
+  if(x1<0){say('Could not find the character in the picture. Try one with a plain background.','err');return}
+  const bw=x1-x0+1,bh=y1-y0+1,cx=x0+bw/2;
+  const sample=(fy,half=.06)=>{const yy=Math.round(y0+bh*fy),r=[],g=[],b=[];
+    for(let y=yy-2;y<=yy+2;y++)for(let x=Math.round(cx-bw*half);x<=Math.round(cx+bw*half);x++){if(x<0||y<0||x>=w||y>=h)continue;const i=y*w+x;if(!fg(i))continue;r.push(px[i*4]);g.push(px[i*4+1]);b.push(px[i*4+2])}
+    if(!r.length)return null;const med=a=>a.sort((p,q)=>p-q)[a.length>>1];
+    return '#'+[med(r),med(g),med(b)].map(v=>v.toString(16).padStart(2,'0')).join('')};
+  const picks={hair:sample(.02),skin:sample(.12,.03),shirt:sample(.33),pants:sample(.64,.1),shoes:sample(.975,.15)};
+  let n=0;for(const k in picks)if(picks[k]){$('c_'+k).value=picks[k];n++}
+  avRebuild(true);say(`Picked ${n} colors from your picture. Fix any of them with the color boxes.`,'ok');
+};
+
+/* match with Claude (copy prompt / paste reply) */
+function avPrompt(){return `Look at the character in the picture I attached and describe it as settings for a low-poly game avatar maker.
+Reply with ONLY this JSON in one code block, no other text:
+{"name":"Short Name","height":1.75,"build":50,"head":1.0,"legs":1.0,"hair":"short","sleeves":"short","legwear":"pants","footwear":"boots","acc":{"helmet":false,"cape":false,"pads":false,"belt":false,"backpack":false},"colors":{"skin":"#c8916b","hair":"#3b2a20","eyes":"#26262e","shirt":"#8a3324","pants":"#3d3a45","shoes":"#2a211c","accent":"#c9a24a"}}
+
+Meanings:
+- height: meters, 1.2 to 2.2
+- build: 0 = very slim, 50 = average, 100 = very bulky
+- head: 0.8 to 2.2. Use 1.0 for realistic art, 1.6 to 2.2 for chibi or cartoon styles
+- legs: 0.8 (short) to 1.2 (long)
+- hair: none, short, long, spiky, ponytail, or mohawk
+- sleeves: none, short, or long. legwear: pants, shorts, or skirt. footwear: shoes or boots
+- acc: true for each item the character has. pads = shoulder armor
+- colors: hex colors taken from the picture. shirt = main top or armor color, pants = legwear color, accent = color of the helmet, cape, pads, belt or backpack`}
+$('avCopy').onclick=()=>copyText(avPrompt(),$('avPromptBox'),'Prompt copied. Paste it into Claude and attach your picture.');
+$('avApply').onclick=()=>{
+  const st=avSanitize(pullJson($('avPaste').value));
+  if(!st){say('That does not look like avatar settings. Copy Claude\'s whole reply and paste it again.','err');return}
+  avWrite(st);avRebuild(false);say(`Applied ${st.name}.`,'ok');
+};
+
+avWrite(AV_DEFAULT);avRebuild(false);
+
 /* ---------- export ---------- */
 const fileBase=()=>currentName.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_')||'asset';
 let dl=null;
@@ -477,7 +754,15 @@ async function saveBlob(blob,name){
   try{await dl.save({filename:name,data:blob});return 'saved'}
   catch(e){if(e?.code==='declined')return 'declined';if(e?.code==='rejected_extension'||e?.code==='extension_not_enabled')return 'blocked';throw e}
 }
-function exportGlb(){return new Promise((res,rej)=>{const clone=current.clone(true);
+function exportGlb(){return new Promise((res,rej)=>{
+  const clips=current.userData.clips;
+  if(clips){ // rigged avatar: export in rest pose with skeleton and animations
+    mixer?.stopAllAction();current.userData.skeleton.pose();
+    const mats=[];current.traverse(o=>{if(o.isMesh){mats.push([o.material,o.material.wireframe]);o.material.wireframe=false}});
+    const done=()=>{for(const [m,w] of mats)m.wireframe=w;playAnim(curAnim)};
+    new GLTFExporter().parse(current,r=>{done();res(new Uint8Array(r))},e=>{done();rej(e)},{binary:true,animations:clips});return;
+  }
+  const clone=current.clone(true);
   clone.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.wireframe=false}}); // always solid, never lines
   new GLTFExporter().parse(clone,r=>res(new Uint8Array(r)),rej,{binary:true})})}
 $('saveGlb').onclick=async()=>{
@@ -491,7 +776,8 @@ $('saveGlb').onclick=async()=>{
     say(r==='saved'?fileBase()+'.zip downloaded. Unzip it to get the .glb.':'Download cancelled.',r==='saved'?'ok':'');
   }catch{say('The download did not go through. Try again.','err')}
 };
-$('saveJson').onclick=async()=>{if(!currentSpec){say('Voxel and terrain models have no parts list. Use Download .glb.','err');return}
+$('saveJson').onclick=async()=>{if(current.userData.avatar){try{const r=await saveBlob(new Blob([JSON.stringify(current.userData.avatar,null,2)],{type:'application/json'}),fileBase()+'.avatar.json');say(r==='saved'?fileBase()+'.avatar.json downloaded.':'Download cancelled.',r==='saved'?'ok':'')}catch{say('The download did not go through. Try again.','err')}return}
+  if(!currentSpec){say('Voxel and terrain models have no parts list. Use Download .glb.','err');return}
   try{const r=await saveBlob(new Blob([JSON.stringify(currentSpec,null,2)],{type:'application/json'}),fileBase()+'.parts.json');
     say(r==='saved'?fileBase()+'.parts.json downloaded.':'Download cancelled.',r==='saved'?'ok':'')}catch{say('The download did not go through. Try again.','err')}};
 $('copyJson').onclick=()=>{if(!currentSpec){say('Voxel and terrain models have no parts list. Use Download .glb.','err');return}
