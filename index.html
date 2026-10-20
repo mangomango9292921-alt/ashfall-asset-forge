@@ -109,6 +109,16 @@ ol.steps{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:fl
     <!-- AVATAR -->
     <section id="pAvatar">
       <p class="help">A game-ready character with a real skeleton and four animations (Idle, Walk, Run, Wave). It loads straight into three.js, Unity or Godot ready to move.</p>
+      <div id="freeAI">
+        <button class="primary" id="avAuto">Auto-match with free AI</button>
+        <div class="row">
+          <select id="avAiModel" aria-label="Free AI model">
+            <option value="HuggingFaceTB/SmolVLM-256M-Instruct" selected>Fast AI (about 250 MB, one-time)</option>
+            <option value="HuggingFaceTB/SmolVLM-500M-Instruct">Smarter AI (about 500 MB, one-time)</option>
+          </select>
+        </div>
+        <p class="help" id="aiNote">Runs on your own computer, so it's free with no account. The first run downloads the AI model, and after that it starts quickly. Works best in Chrome or Edge on a computer.</p>
+      </div>
       <details id="avClaude">
         <summary>Match my picture with Claude (best)</summary>
         <ol class="steps">
@@ -702,23 +712,106 @@ bind('avHead','avHeadO',v=>v>=1.6?'chibi':v>=1.25?'big':'realistic');bind('avLeg
 for(const el of $('pAvatar').querySelectorAll('input,select'))if(!el.closest('#avClaude'))el.addEventListener('input',()=>avRebuild(true));
 
 /* colors from a full-body picture */
-$('avPick').onclick=async()=>{
-  if(!imageFile){say('Add a full-body, front-facing picture first.','err');return}
+async function pickColors(only){
+  if(!imageFile){say('Add a full-body, front-facing picture first.','err');return null}
   const {w,h,px}=await readPixels(imageFile,160);
   let hasAlpha=false;for(let i=3;i<px.length;i+=4)if(px[i]<250){hasAlpha=true;break}
   const cs=[0,w-1,(h-1)*w,(h-1)*w+w-1].map(i=>[px[i*4],px[i*4+1],px[i*4+2]]);const bg=cs.reduce((a,c)=>a.map((v,j)=>v+c[j]/4),[0,0,0]);
   const fg=i=>px[i*4+3]>=128&&(hasAlpha||Math.hypot(px[i*4]-bg[0],px[i*4+1]-bg[1],px[i*4+2]-bg[2])>=40);
   let x0=w,x1=-1,y0=h,y1=-1;for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(fg(y*w+x)){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)}
-  if(x1<0){say('Could not find the character in the picture. Try one with a plain background.','err');return}
+  if(x1<0){if(!only)say('Could not find the character in the picture. Try one with a plain background.','err');return null}
   const bw=x1-x0+1,bh=y1-y0+1,cx=x0+bw/2;
   const sample=(fy,half=.06)=>{const yy=Math.round(y0+bh*fy),r=[],g=[],b=[];
     for(let y=yy-2;y<=yy+2;y++)for(let x=Math.round(cx-bw*half);x<=Math.round(cx+bw*half);x++){if(x<0||y<0||x>=w||y>=h)continue;const i=y*w+x;if(!fg(i))continue;r.push(px[i*4]);g.push(px[i*4+1]);b.push(px[i*4+2])}
     if(!r.length)return null;const med=a=>a.sort((p,q)=>p-q)[a.length>>1];
     return '#'+[med(r),med(g),med(b)].map(v=>v.toString(16).padStart(2,'0')).join('')};
   const picks={hair:sample(.02),skin:sample(.12,.03),shirt:sample(.33),pants:sample(.64,.1),shoes:sample(.975,.15)};
+  if(only)return picks;
   let n=0;for(const k in picks)if(picks[k]){$('c_'+k).value=picks[k];n++}
-  avRebuild(true);say(`Picked ${n} colors from your picture. Fix any of them with the color boxes.`,'ok');
+  avRebuild(true);say(`Picked ${n} colors from your picture. Fix any of them with the color boxes.`,'ok');return picks;
+}
+$('avPick').onclick=()=>pickColors(false);
+/* ---------- free in-browser AI (SmolVLM via Transformers.js) ---------- */
+const COLOR_WORDS={'dark red':'#6b1f1f','maroon':'#6b1f1f','crimson':'#a32a2a','red':'#a8322a','orange':'#d0702a','yellow':'#d8b43a','gold':'#c9a24a','golden':'#c9a24a',
+  'blonde':'#d9be7a','blond':'#d9be7a','light brown':'#8a6a48','dark brown':'#3e2a1c','brown':'#5e3f2a','tan':'#c9a77c','beige':'#c9b08c','dark green':'#2a4a2a',
+  'light green':'#7fb86a','green':'#3f7a3a','teal':'#2f8a8a','cyan':'#3fa8b8','light blue':'#7fb0dc','dark blue':'#23305a','navy':'#23305a','blue':'#2f5aa8',
+  'purple':'#6a3f8a','violet':'#7a4fa0','pink':'#d88aa8','white':'#e8e6e2','silver':'#b8bcc4','gray':'#7a7a80','grey':'#7a7a80','black':'#1f1c1f'};
+function colorWord(t){t=' '+t.toLowerCase()+' ';let best=null;for(const k in COLOR_WORDS)if(t.includes(k)&&(!best||k.length>best.length))best=k;return best?COLOR_WORDS[best]:null}
+const yes=t=>/^\W*(yes|yeah|true)\b/i.test(t);
+let vlm=null,vlmId=null;
+const onArtifact=!!window.claude;
+if(onArtifact){$('avAuto').disabled=true;$('avAiModel').hidden=true;
+  $('aiNote').textContent='Free AI is turned off on this Claude page. It works on the forge website at mangomango9292921-alt.github.io/ashfall-asset-forge.'}
+async function loadVLM(id){
+  if(vlm&&vlmId===id)return vlm;
+  const T=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3');
+  let gpu=false;try{gpu=!!(navigator.gpu&&await navigator.gpu.requestAdapter())}catch{}
+  const files={};
+  const prog=e=>{if(e.status==='progress'&&e.total){files[e.file]=[e.loaded,e.total];
+    let l=0,t=0;for(const f in files){l+=files[f][0];t+=files[f][1]}
+    say(`Downloading free AI model… ${Math.round(l/t*100)}% (${(t/1e6).toFixed(0)} MB, one time only)`)}};
+  const processor=await T.AutoProcessor.from_pretrained(id,{progress_callback:prog});
+  const model=await T.AutoModelForVision2Seq.from_pretrained(id,{dtype:{embed_tokens:'fp32',vision_encoder:'q4',decoder_model_merged:'q4'},device:gpu?'webgpu':'wasm',progress_callback:prog});
+  vlm={T,processor,model,gpu};vlmId=id;return vlm;
+}
+async function askVLM(v,image,question,max=10){
+  const messages=[{role:'user',content:[{type:'image'},{type:'text',text:question}]}];
+  const text=v.processor.apply_chat_template(messages,{add_generation_prompt:true});
+  const inputs=await v.processor(text,[image],{do_image_splitting:false});
+  const out=await v.model.generate({...inputs,max_new_tokens:max,do_sample:false,repetition_penalty:1.1});
+  const dec=v.processor.batch_decode(out.slice(null,[inputs.input_ids.dims.at(-1),null]),{skip_special_tokens:true});
+  return String(dec[0]||'').trim();
+}
+$('avAuto').onclick=async()=>{
+  if(onArtifact)return;
+  if(!imageFile){say('Add a picture of your character first.','err');return}
+  const btn=$('avAuto');btn.disabled=true;
+  try{
+    say('Loading free AI…');
+    const v=await loadVLM($('avAiModel').value);
+    const image=await v.T.RawImage.fromBlob(imageFile);
+    const st=avRead();
+    const Q=[
+      ['hair','Look at the character. What is their hair like? Answer with one word: bald, short, long, spiky, ponytail, or mohawk.',t=>{t=t.toLowerCase();
+        for(const [w,v] of [['bald','none'],['mohawk','mohawk'],['ponytail','ponytail'],['pony','ponytail'],['spik','spiky'],['long','long'],['short','short']])if(t.includes(w))return v}],
+      ['helmet','Is the character wearing a helmet, hat or hood? Answer yes or no.',yes],
+      ['cape','Is the character wearing a cape or cloak? Answer yes or no.',yes],
+      ['pads','Does the character have shoulder armor or shoulder pads? Answer yes or no.',yes],
+      ['backpack','Is the character wearing a backpack? Answer yes or no.',yes],
+      ['belt','Is the character wearing a belt? Answer yes or no.',yes],
+      ['sleeves','Are the character\'s arms bare, in short sleeves, or in long sleeves? Answer with one word: bare, short, or long.',t=>/bare|no sleeve|sleeveless/i.test(t)?'none':/long/i.test(t)?'long':/short/i.test(t)?'short':null],
+      ['legwear','Is the character wearing pants, shorts, a skirt, a dress or a robe? Answer with one word.',t=>/skirt|dress|robe|gown/i.test(t)?'skirt':/short/i.test(t)?'shorts':/pant|trouser|jean|legging/i.test(t)?'pants':null],
+      ['boots','Is the character wearing boots? Answer yes or no.',yes],
+      ['chibi','Is this a cartoon or chibi style character with a big head? Answer yes or no.',yes],
+      ['build','Is the character slim, average, or bulky? Answer with one word.',t=>/bulk|muscul|big|large|fat|heavy|stocky/i.test(t)?82:/slim|thin|skinny|slender/i.test(t)?22:50],
+      ['c_hair','What color is the character\'s hair? Answer with one color.',colorWord],
+      ['c_shirt','What color is the character\'s shirt, top or armor? Answer with one color.',colorWord],
+      ['c_pants','What color are the character\'s pants or legwear? Answer with one color.',colorWord],
+      ['c_shoes','What color are the character\'s shoes or boots? Answer with one color.',colorWord],
+      ['c_accent','What color is the character\'s cape, belt or main accessory? Answer with one color.',colorWord],
+      ['c_eyes','What color are the character\'s eyes? Answer with one color.',colorWord],
+      ['name','Give this character a short fantasy name, two words at most.',t=>t.replace(/["'.]/g,'').split(/\s+/).slice(0,2).join(' ')||null],
+    ];
+    const got={};
+    for(const [i,[key,q,parse]] of Q.entries()){
+      say(`Free AI is studying your picture… ${i+1}/${Q.length}${v.gpu?'':' (slow mode: no graphics card access)'}`);
+      try{const a=await askVLM(v,image,q,key==='name'?8:6);const r=parse(a);if(r!==null&&r!==undefined)got[key]=r}catch(e){console.warn(key,e)}
+    }
+    if(got.hair)st.hair=got.hair;
+    for(const a of ['helmet','cape','pads','backpack','belt'])if(a in got)st.acc[a]=got[a];
+    if(got.sleeves)st.sleeves=got.sleeves;if(got.legwear)st.legwear=got.legwear;
+    if('boots' in got)st.footwear=got.boots?'boots':'shoes';
+    if('chibi' in got)st.head=got.chibi?1.7:1.0;if(got.build)st.build=got.build;
+    for(const c of ['hair','shirt','pants','shoes','accent','eyes'])if(got['c_'+c])st.colors[c]=got['c_'+c];
+    if(got.name&&got.name.length>1)st.name=got.name.slice(0,40);
+    const px=await pickColors(true);if(px?.skin)st.colors.skin=px.skin;
+    avWrite(st);avRebuild(false);
+    say(`Auto-matched ${st.name}. Free AI can get things wrong, so fix anything below.`,'ok');
+  }catch(e){console.error(e);
+    say(/webgpu|gpu|adapter/i.test(String(e))?'Your browser could not run the free AI. Try Chrome or Edge on a computer, or use "Match my picture with Claude".':'The free AI could not load: '+(e.message||e)+'. Check your internet connection and try again.','err')}
+  finally{btn.disabled=false}
 };
+
 
 /* match with Claude (copy prompt / paste reply) */
 function avPrompt(){return `Look at the character in the picture I attached and describe it as settings for a low-poly game avatar maker.

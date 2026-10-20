@@ -4,7 +4,7 @@ A free tool that turns a picture into a 3D game asset you download as `.glb`, re
 
 **Live site:** https://mangomango9292921-alt.github.io/ashfall-asset-forge/
 
-- **Avatar**: a rigged, animated character (Idle, Walk, Run, Wave). Match it to your picture with Claude or by picking colors from it.
+- **Avatar**: a rigged, animated character (Idle, Walk, Run, Wave). Match it to your picture with the free in-browser AI (SmolVLM, runs on your own computer), with Claude, or by picking colors from it.
 - **Voxel**: turns pixel art, sprites and icons into chunky voxel models.
 - **Terrain**: turns a heightmap or top-down map into a landscape.
 - **With Claude**: copy the prompt, paste it into Claude with your picture attached, then paste the reply back to get a low-poly model built from simple shapes.
