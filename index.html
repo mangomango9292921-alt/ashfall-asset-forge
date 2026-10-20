@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ashfall Asset Forge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: forge bench — control column left, 3D viewport fills the rest; stacks on phones */
+:root{
+  --bg:#ebe6e1; --panel:#f6f2ee; --stage:#d9d0c8; --fg:#2a2320; --muted:#6b5f58; --line:#cdc2b9; --ember:#c8430c; --ember-ink:#fff7f2; --ok:#2f7a4a; --bad:#b3261e;
+  --display:"Cinzel",Georgia,serif; --body:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151110;--panel:#1d1816;--stage:#241d1a;--fg:#ede4dd;--muted:#a3958c;--line:#3a302c;--ember:#ff6a2b;--ember-ink:#1a0d06;--ok:#6fcf8f;--bad:#ff8a80;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#151110;--panel:#1d1816;--stage:#241d1a;--fg:#ede4dd;--muted:#a3958c;--line:#3a302c;--ember:#ff6a2b;--ember-ink:#1a0d06;--ok:#6fcf8f;--bad:#ff8a80;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px var(--body);display:flex;flex-direction:column}
+header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-block:12px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line)}
+h1{font-family:var(--display);font-size:20px;letter-spacing:.08em;margin:0}
+header p{margin:0;color:var(--muted);font-size:13px}
+main{flex:1;display:grid;grid-template-columns:350px 1fr;min-height:0}
+aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:16px;display:flex;flex-direction:column;gap:18px;min-width:0}
+section{display:flex;flex-direction:column;gap:8px}
+.label{font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.help{font-size:13px;color:var(--muted);margin:0;line-height:1.45}
+.drop{border:1.5px dashed var(--line);border-radius:8px;min-height:110px;display:grid;place-items:center;text-align:center;padding:12px;cursor:pointer;color:var(--muted);font-size:13px;position:relative;overflow:hidden}
+.drop:hover,.drop.over{border-color:var(--ember);color:var(--fg)}
+.drop:focus-within{outline:2px solid var(--ember);outline-offset:2px}
+.drop img{max-height:150px;border-radius:4px;image-rendering:pixelated}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.tabs button{border:0;border-radius:0;padding:9px 6px;font:600 13px var(--body);background:transparent;color:var(--fg);cursor:pointer}
+.tabs button+button{border-left:1px solid var(--line)}
+.tabs button[aria-selected="true"]{background:var(--ember);color:var(--ember-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 13px var(--body);color:var(--fg);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 11px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ember);border-color:var(--ember);color:var(--ember-ink)}
+textarea,select,input[type=text]{font:14px var(--body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px;width:100%}
+textarea{resize:vertical;min-height:56px}
+textarea.code{font:12px/1.4 var(--mono);min-height:90px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1;min-width:0}
+button{font:600 14px var(--body);border-radius:6px;padding:9px 14px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--fg)}
+button.primary{background:var(--ember);border-color:var(--ember);color:var(--ember-ink)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,.chip:focus-visible,textarea:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+.slider{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center}
+.slider label{font-size:13px}
+.slider output{font:12px var(--mono);color:var(--muted)}
+.slider input{grid-column:1/-1;width:100%;accent-color:var(--ember)}
+ol.steps{margin:0;padding-left:18px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.status{font-size:13px;color:var(--muted);min-height:1.3em}
+.status.err{color:var(--bad)}.status.ok{color:var(--ok)}
+.parts{font:12px/1.5 var(--mono);color:var(--muted);max-height:150px;overflow:auto;border-top:1px solid var(--line);padding-top:8px}
+.parts span{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;border:1px solid var(--line)}
+#stage{position:relative;background:var(--stage);min-width:0;min-height:0}
+#stage canvas{display:block;width:100%;height:100%}
+.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;pointer-events:none}
+.hud>*{pointer-events:auto}
+.tag{font:500 12px var(--mono);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:5px 9px}
+.tag b{font-family:var(--display);font-size:14px;letter-spacing:.04em;margin-right:6px}
+.viewbtns{display:flex;gap:6px}
+.viewbtns .chip{background:var(--panel)}
+.viewbtns .chip[aria-pressed="true"]{background:var(--ember)}
+.hint{position:absolute;bottom:12px;left:12px;font-size:12px;color:var(--muted);pointer-events:none}
+@media (max-width:760px){
+  main{grid-template-columns:1fr;grid-template-rows:auto 60vh}
+  aside{border-right:0;border-top:1px solid var(--line);order:2;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  #stage{order:1;min-height:360px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ashfall Asset Forge</h1>
+  <p>Picture in, game asset out. Free, runs in your browser, exports .glb.</p>
+</header>
+
+<main>
+  <aside>
+    <section>
+      <span class="label">1 · Picture</span>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="image/png,image/jpeg,image/webp,image/gif">
+        <span id="dropText">Drop a picture here, tap to choose, or paste one.<br>Pixel art, sprites, icons, concept art or a map.</span>
+      </label>
+    </section>
+
+    <section>
+      <span class="label">2 · How to build it</span>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tVoxel" aria-selected="true">Voxel</button>
+        <button role="tab" id="tTerrain" aria-selected="false">Terrain</button>
+        <button role="tab" id="tClaude" aria-selected="false">With Claude</button>
+      </div>
+    </section>
+
+    <!-- VOXEL -->
+    <section id="pVoxel">
+      <p class="help">Turns the picture into a chunky 3D voxel model, like Minecraft or MagicaVoxel. Best with pixel art, sprites and icons on a plain or transparent background.</p>
+      <div class="slider"><label for="vRes">Detail</label><output id="vResO"></output><input type="range" id="vRes" min="12" max="128" step="1" value="48"></div>
+      <div class="slider"><label for="vDepth">Thickness</label><output id="vDepthO"></output><input type="range" id="vDepth" min="1" max="40" step="1" value="6"></div>
+      <div class="slider"><label for="vHeight">Real height</label><output id="vHeightO"></output><input type="range" id="vHeight" min="0.2" max="20" step="0.1" value="1.8"></div>
+      <div class="slider"><label for="vTol">Background removal</label><output id="vTolO"></output><input type="range" id="vTol" min="0" max="140" step="1" value="40"></div>
+      <div class="row">
+        <select id="vShape" aria-label="Shape"><option value="puffy" selected>Puffy (rounded body)</option><option value="flat">Flat (cutout)</option></select>
+        <select id="vMirror" aria-label="Back side"><option value="same">Back matches front</option><option value="dark">Back slightly darker</option></select>
+      </div>
+      <button class="primary" id="goVoxel">Build voxel model</button>
+    </section>
+
+    <!-- TERRAIN -->
+    <section id="pTerrain" hidden>
+      <p class="help">Brighter pixels become higher ground, and the picture's colors paint the land. Use a grayscale heightmap or a top-down map.</p>
+      <div class="slider"><label for="hScale">Height</label><output id="hOut"></output><input type="range" id="hScale" min="0" max="25" step="0.5" value="6"></div>
+      <div class="slider"><label for="tSize">Width</label><output id="sOut"></output><input type="range" id="tSize" min="10" max="200" step="5" value="60"></div>
+      <div class="row">
+        <select id="tRes" aria-label="Mesh resolution"><option value="64">Low-poly (64²)</option><option value="128" selected>Medium (128²)</option><option value="200">High (200²)</option></select>
+        <select id="tInvert" aria-label="Height direction"><option value="0">Bright = high</option><option value="1">Dark = high</option></select>
+      </div>
+      <button class="primary" id="goTerrain">Build terrain</button>
+    </section>
+
+    <!-- CLAUDE -->
+    <section id="pClaude" hidden>
+      <p class="help">Uses your regular Claude chat. No API key and nothing extra to pay. Claude builds a low-poly model from simple shapes, which works for characters, monsters, weapons, buildings and whole map scenes.</p>
+      <div class="chips" id="kinds" role="group" aria-label="Asset type">
+        <button class="chip" data-kind="character" aria-pressed="true">Player</button>
+        <button class="chip" data-kind="creature" aria-pressed="false">Monster</button>
+        <button class="chip" data-kind="weapon" aria-pressed="false">Weapon</button>
+        <button class="chip" data-kind="prop" aria-pressed="false">Prop</button>
+        <button class="chip" data-kind="building" aria-pressed="false">Building</button>
+        <button class="chip" data-kind="vehicle" aria-pressed="false">Vehicle</button>
+        <button class="chip" data-kind="map" aria-pressed="false">Map scene</button>
+      </div>
+      <select id="detail" aria-label="Detail level">
+        <option value="simple">Simple (10–20 parts)</option>
+        <option value="detailed" selected>Detailed (25–45 parts)</option>
+        <option value="hero">Hero asset (45–80 parts)</option>
+      </select>
+      <input type="text" id="extra" placeholder="Optional notes, e.g. glowing red eyes, sword in right hand">
+      <ol class="steps">
+        <li>Press <b>Copy prompt</b>.</li>
+        <li>Open Claude at claude.ai, paste the prompt, and attach your picture.</li>
+        <li>Copy Claude's reply, paste it below, and press <b>Build</b>.</li>
+      </ol>
+      <button id="copyPrompt">Copy prompt</button>
+      <textarea id="promptBox" class="code" hidden readonly aria-label="Prompt to copy"></textarea>
+      <textarea id="paste" class="code" placeholder='Paste Claude&apos;s reply here: {"name": …, "parts": [ … ]}'></textarea>
+      <button class="primary" id="goPaste">Build</button>
+      <p class="help">To change a model later, press <b>Copy parts JSON</b>, paste it into Claude with your change ("add a shield"), and paste the reply back here.</p>
+    </section>
+
+    <div class="status" id="status" role="status"></div>
+
+    <section>
+      <span class="label">Export</span>
+      <div class="row">
+        <button class="primary" id="saveGlb">Download .glb</button>
+        <button id="saveJson">Download .json</button>
+      </div>
+      <button id="copyJson">Copy parts JSON</button>
+      <p class="help">.glb loads in three.js, Unity, Godot and Blender. .json is the editable parts list for Claude models.</p>
+    </section>
+
+    <section>
+      <span class="label">Model info</span>
+      <div class="parts" id="parts"></div>
+    </section>
+  </aside>
+
+  <div id="stage">
+    <div class="hud">
+      <div class="tag" id="nameTag"><b>Ember Sentinel</b>example</div>
+      <div class="viewbtns">
+        <button class="chip" id="vWire" aria-pressed="false">Wireframe</button>
+        <button class="chip" id="vSpin" aria-pressed="true">Spin</button>
+      </div>
+    </div>
+    <div class="hint">Drag to orbit · scroll or pinch to zoom · right-drag to pan</div>
+  </div>
+</main>
+
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.171.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.171.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
+import {RoomEnvironment} from 'three/addons/environments/RoomEnvironment.js';
+
+const $=id=>document.getElementById(id);
+const say=(t,cls='')=>{const s=$('status');s.textContent=t;s.className='status '+cls};
+
+/* ---------- example (shown on load) ---------- */
+const EXAMPLE={name:"Ember Sentinel",kind:"character",parts:[
+ {name:"leg_L",shape:"box",pos:[-0.14,0.365,0],size:[0.17,0.52,0.19],color:"#5d4a3a",metal:0.4,rough:0.85},
+ {name:"leg_R",shape:"box",pos:[0.14,0.365,0],size:[0.17,0.52,0.19],color:"#5d4a3a",metal:0.4,rough:0.85},
+ {name:"boot_L",shape:"box",pos:[-0.14,0.065,0.03],size:[0.2,0.13,0.27],color:"#3d3530",metal:1,rough:0.38},
+ {name:"boot_R",shape:"box",pos:[0.14,0.065,0.03],size:[0.2,0.13,0.27],color:"#3d3530",metal:1,rough:0.38},
+ {name:"arm_L",shape:"box",pos:[-0.28,0.835,0],size:[0.13,0.42,0.15],color:"#5d4a3a",metal:0.4,rough:0.85},
+ {name:"arm_R",shape:"box",pos:[0.28,0.835,0],size:[0.13,0.42,0.15],color:"#5d4a3a",metal:0.4,rough:0.85},
+ {name:"shoulder_L",shape:"box",pos:[-0.28,1.085,0],size:[0.16,0.14,0.22],color:"#3d3530",metal:1,rough:0.38},
+ {name:"shoulder_R",shape:"box",pos:[0.28,1.085,0],size:[0.16,0.14,0.22],color:"#3d3530",metal:1,rough:0.38},
+ {name:"hips",shape:"cylinder",pos:[0,0.645,0],size:[0.4,0.12,0.4],color:"#3d3530",metal:1,rough:0.38},
+ {name:"torso",shape:"box",pos:[0,0.905,0],size:[0.42,0.48,0.25],color:"#5d4a3a",metal:0.4,rough:0.85},
+ {name:"chest_core",shape:"box",pos:[0,0.975,0.135],size:[0.28,0.15,0.04],color:"#ff4400",metal:0.15,rough:0.28,glow:0.8},
+ {name:"collar",shape:"box",pos:[0,1.12,0],size:[0.5,0.1,0.26],color:"#3d3530",metal:1,rough:0.38},
+ {name:"neck",shape:"cylinder",pos:[0,1.215,0],size:[0.16,0.1,0.16],color:"#3d3530",metal:1,rough:0.38},
+ {name:"head",shape:"box",pos:[0,1.385,0],size:[0.29,0.29,0.29],color:"#5d4a3a",metal:0.4,rough:0.85},
+ {name:"visor",shape:"box",pos:[0,1.395,0.15],size:[0.25,0.08,0.03],color:"#ff4400",metal:0.15,rough:0.28,glow:0.8},
+ {name:"crest",shape:"box",pos:[0,1.545,-0.05],size:[0.035,0.1,0.035],color:"#3d3530",metal:1,rough:0.38}
+]};
+
+/* ---------- scene ---------- */
+const stage=$('stage');
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+stage.prepend(renderer.domElement);
+const scene=new THREE.Scene();
+scene.environment=new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(),0.04).texture;
+scene.add(new THREE.HemisphereLight(0xfff4ea,0x3a2a22,1.1));
+const sun=new THREE.DirectionalLight(0xffffff,2.2);sun.position.set(3,5,4);scene.add(sun);
+const cam=new THREE.PerspectiveCamera(35,1,0.01,2000);
+const ctl=new OrbitControls(cam,renderer.domElement);ctl.enableDamping=true;
+ctl.autoRotate=!matchMedia('(prefers-reduced-motion: reduce)').matches;ctl.autoRotateSpeed=1.2;
+let grid=null,current=null,currentSpec=null,currentName='asset',wire=false;
+
+const clamp=(v,a,b,d)=>{v=Number(v);return Number.isFinite(v)?Math.min(b,Math.max(a,v)):d};
+const vec=(a,d)=>Array.isArray(a)&&a.length>=3?a.slice(0,3).map((x,i)=>clamp(x,-500,500,d[i])):d.slice();
+const safeColor=c=>{try{return new THREE.Color(String(c||'#888888'))}catch{return new THREE.Color('#888888')}};
+
+function geometryFor(p){
+  switch(p.shape){
+    case 'cylinder':{const t=clamp(p.taper??1,0,3,1);return new THREE.CylinderGeometry(0.5*t,0.5,1,12)}
+    case 'cone':return new THREE.ConeGeometry(0.5,1,12);
+    case 'sphere':return new THREE.SphereGeometry(0.5,14,10);
+    case 'wedge':{const g=new THREE.BufferGeometry();const v=[-.5,-.5,.5, .5,-.5,.5, -.5,.5,-.5, .5,.5,-.5, -.5,-.5,-.5, .5,-.5,-.5];
+      const i=[0,1,3,0,3,2, 4,2,3,4,3,5, 0,4,5,0,5,1, 0,2,4, 1,5,3];const pos=[];for(const k of i)pos.push(v[k*3],v[k*3+1],v[k*3+2]);
+      g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.computeVertexNormals();return g}
+    case 'torus':return new THREE.TorusGeometry(0.4,0.1,8,16);
+    default:return new THREE.BoxGeometry(1,1,1);
+  }
+}
+function buildFromSpec(spec){
+  const group=new THREE.Group();group.name=String(spec.name||'asset').slice(0,60);
+  const mats=new Map();
+  for(const [i,p] of (spec.parts||[]).slice(0,200).entries()){
+    const color=safeColor(p.color),metal=clamp(p.metal,0,1,0.1),rough=clamp(p.rough,0,1,0.8),glow=clamp(p.glow,0,3,0);
+    const key=color.getHexString()+metal+rough+glow;let m=mats.get(key);
+    if(!m){m=new THREE.MeshStandardMaterial({color,metalness:metal,roughness:rough,flatShading:true});
+      if(glow>0){m.emissive=color.clone();m.emissiveIntensity=glow}m.name='mat_'+mats.size;mats.set(key,m)}
+    const mesh=new THREE.Mesh(geometryFor(p),m);mesh.name=String(p.name||('part_'+i)).slice(0,60);
+    mesh.position.fromArray(vec(p.pos,[0,0,0]));
+    mesh.scale.fromArray(vec(p.size,[0.2,0.2,0.2]).map(x=>Math.max(0.002,Math.abs(x))));
+    const r=vec(p.rot,[0,0,0]).map(d=>d*Math.PI/180);mesh.rotation.set(r[0],r[1],r[2]);
+    group.add(mesh);
+  }
+  ground(group);return group;
+}
+function ground(group){
+  const box=new THREE.Box3().setFromObject(group);if(box.isEmpty())return;
+  const c=box.getCenter(new THREE.Vector3());
+  for(const ch of group.children){ch.position.x-=c.x;ch.position.z-=c.z;ch.position.y-=box.min.y}
+}
+function frame(obj){
+  const box=new THREE.Box3().setFromObject(obj);const size=box.getSize(new THREE.Vector3()),c=box.getCenter(new THREE.Vector3());
+  const r=Math.max(size.length(),0.5);
+  ctl.target.copy(c);cam.position.set(c.x+r*0.9,c.y+r*0.45,c.z+r*1.25);cam.near=r/200;cam.far=r*50;cam.updateProjectionMatrix();
+  if(grid)scene.remove(grid);
+  const gs=Math.pow(10,Math.ceil(Math.log10(Math.max(size.x,size.z,0.1)*2.5)));
+  grid=new THREE.GridHelper(gs,20,0x8a6a58,0x6a5a50);grid.material.transparent=true;grid.material.opacity=.3;grid.position.y=box.min.y-0.001;scene.add(grid);
+}
+function show(group,spec,label){
+  if(current){scene.remove(current);current.traverse(o=>o.geometry?.dispose())}
+  current=group;currentSpec=spec;currentName=group.name||'asset';scene.add(group);frame(group);applyWire();
+  const t=$('nameTag');t.innerHTML='';const b=document.createElement('b');b.textContent=currentName;t.append(b,document.createTextNode(label||''));
+  info();
+}
+function info(){
+  const el=$('parts');el.innerHTML='';
+  let tris=0;current.traverse(o=>{if(o.geometry)tris+=(o.geometry.index?o.geometry.index.count:o.geometry.attributes.position.count)/3});
+  const head=document.createElement('div');head.textContent=Math.round(tris).toLocaleString()+' triangles';el.append(head);
+  if(currentSpec)for(const p of currentSpec.parts||[]){const d=document.createElement('div');const s=document.createElement('span');s.style.background=safeColor(p.color).getStyle();d.append(s,document.createTextNode(`${p.name||'part'} · ${p.shape||'box'}`));el.append(d)}
+}
+function applyWire(){current?.traverse(o=>{if(o.isMesh){o.material.wireframe=wire;o.material.needsUpdate=true}})}
+$('vWire').onclick=e=>{wire=!wire;e.currentTarget.setAttribute('aria-pressed',wire);applyWire()};
+$('vSpin').setAttribute('aria-pressed',ctl.autoRotate);
+$('vSpin').onclick=e=>{ctl.autoRotate=!ctl.autoRotate;e.currentTarget.setAttribute('aria-pressed',ctl.autoRotate)};
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(stage);resize();
+renderer.setAnimationLoop(()=>{ctl.update();renderer.render(scene,cam)});
+show(buildFromSpec(EXAMPLE),EXAMPLE,'example');
+
+/* ---------- tabs ---------- */
+const TABS={tVoxel:'pVoxel',tTerrain:'pTerrain',tClaude:'pClaude'};
+for(const t in TABS)$(t).onclick=()=>{for(const k in TABS){$(k).setAttribute('aria-selected',k===t);$(TABS[k]).hidden=k!==t}};
+
+/* ---------- picture input ---------- */
+let imageFile=null;
+const drop=$('drop');
+function setImage(f){
+  if(!f||!/^image\//.test(f.type)){say('That file is not a picture. Use PNG, JPG, WebP or GIF.','err');return}
+  imageFile=f;const t=$('dropText');t.innerHTML='';const img=document.createElement('img');img.src=URL.createObjectURL(f);img.alt='Your picture';t.append(img);
+  say('Picture ready.');
+}
+$('file').onchange=e=>setImage(e.target.files[0]);
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');setImage(e.dataTransfer.files[0])});
+document.addEventListener('paste',e=>{const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/'));if(f)setImage(f)});
+
+/* ---------- sliders ---------- */
+const bind=(id,out,fmt)=>{const f=()=>$(out).textContent=fmt($(id).value);$(id).addEventListener('input',f);f()};
+bind('vRes','vResO',v=>v+' voxels tall');bind('vDepth','vDepthO',v=>v+' voxels');bind('vHeight','vHeightO',v=>v+' m');
+bind('vTol','vTolO',v=>v==0?'off':v);bind('hScale','hOut',v=>v+' m');bind('tSize','sOut',v=>v+' m');
+
+async function readPixels(file,maxSide){
+  const bmp=await createImageBitmap(file);const k=maxSide/Math.max(bmp.width,bmp.height);
+  const w=Math.max(1,Math.round(bmp.width*k)),h=Math.max(1,Math.round(bmp.height*k));
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;const cx=cv.getContext('2d');
+  cx.imageSmoothingEnabled=bmp.width>w*2; // keep pixel art crisp
+  cx.drawImage(bmp,0,0,w,h);return {w,h,px:cx.getImageData(0,0,w,h).data};
+}
+
+/* ---------- voxel builder (free, in-browser) ---------- */
+$('goVoxel').onclick=async()=>{
+  if(!imageFile){say('Add a picture first.','err');return}
+  const res=Number($('vRes').value),depth=Number($('vDepth').value),tol=Number($('vTol').value);
+  const puffy=$('vShape').value==='puffy',darkBack=$('vMirror').value==='dark';
+  const bmp=await createImageBitmap(imageFile);
+  // "Detail" = voxels along the picture's height
+  const k=res/bmp.height;const W=Math.max(1,Math.round(bmp.width*k)),H=res;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');
+  cx.imageSmoothingEnabled=bmp.height>H*2;cx.drawImage(bmp,0,0,W,H);const px=cx.getImageData(0,0,W,H).data;
+  // background: transparent pixels, or pixels close to the corner color
+  let hasAlpha=false;for(let i=3;i<px.length;i+=4)if(px[i]<250){hasAlpha=true;break}
+  const corners=[0,W-1,(H-1)*W,(H-1)*W+W-1].map(i=>[px[i*4],px[i*4+1],px[i*4+2]]);
+  const bg=corners.reduce((a,c)=>[a[0]+c[0]/4,a[1]+c[1]/4,a[2]+c[2]/4],[0,0,0]);
+  const mask=new Uint8Array(W*H);
+  for(let i=0;i<W*H;i++){
+    if(px[i*4+3]<128)continue;
+    if(!hasAlpha&&tol>0){const d=Math.hypot(px[i*4]-bg[0],px[i*4+1]-bg[1],px[i*4+2]-bg[2]);if(d<tol)continue}
+    mask[i]=1;
+  }
+  let filled=0;for(const m of mask)filled+=m;
+  if(!filled){say('Nothing left after removing the background. Lower "Background removal".','err');return}
+  // per-pixel half thickness
+  const half=new Float32Array(W*H);
+  if(puffy){ // distance to edge (BFS), shaped into a rounded body
+    const dist=new Int32Array(W*H).fill(-1);const q=[];
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(!mask[i])continue;
+      if(x==0||y==0||x==W-1||y==H-1||!mask[i-1]||!mask[i+1]||!mask[i-W]||!mask[i+W]){dist[i]=1;q.push(i)}}
+    for(let h=0;h<q.length;h++){const i=q[h],x=i%W;for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,i-W,i+W]){if(j<0||j>=W*H||!mask[j]||dist[j]>=0)continue;dist[j]=dist[i]+1;q.push(j)}}
+    let maxD=1;for(const d of dist)if(d>maxD)maxD=d;
+    for(let i=0;i<W*H;i++)if(mask[i]){const t=dist[i]/maxD;half[i]=Math.max(0.5,(depth/2)*Math.sqrt(1-(1-t)*(1-t)))}
+  }else for(let i=0;i<W*H;i++)if(mask[i])half[i]=depth/2;
+  const zr=new Int16Array(W*H);for(let i=0;i<W*H;i++)zr[i]=mask[i]?Math.max(1,Math.round(half[i])):0;
+  const occ=(x,y,z)=>{if(x<0||y<0||x>=W||y>=H)return false;const r=zr[y*W+x];return r>0&&z>=-r&&z<r};
+  const s=Number($('vHeight').value)/H;
+  const pos=[],nor=[],col=[];const c=new THREE.Color();
+  const FACES=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+  const quad=(cxp,cyp,czp,n)=>{ // 4 corners of a unit cube face
+    const [nx,ny,nz]=n;const u=nx?[0,1,0]:[1,0,0];const v=nz?[0,1,0]:(ny?[0,0,1]:[0,0,1]);
+    const o=[cxp+nx*.5,cyp+ny*.5,czp+nz*.5];
+    const P=(a,b)=>[o[0]+(u[0]*a+v[0]*b),o[1]+(u[1]*a+v[1]*b),o[2]+(u[2]*a+v[2]*b)];
+    let A=P(-.5,-.5),B=P(.5,-.5),C=P(.5,.5),D=P(-.5,.5);
+    const cr=[(B[1]-A[1])*(C[2]-A[2])-(B[2]-A[2])*(C[1]-A[1]),(B[2]-A[2])*(C[0]-A[0])-(B[0]-A[0])*(C[2]-A[2]),(B[0]-A[0])*(C[1]-A[1])-(B[1]-A[1])*(C[0]-A[0])];
+    if(cr[0]*nx+cr[1]*ny+cr[2]*nz<0){[B,D]=[D,B]}
+    for(const p of [A,B,C,A,C,D]){pos.push(p[0]*s,p[1]*s,p[2]*s);nor.push(nx,ny,nz);col.push(c.r,c.g,c.b)}
+  };
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const r=zr[y*W+x];if(!r)continue;
+    const iy=H-1-y; // image rows go down, 3D goes up
+    const i=(y*W+x)*4;
+    for(let z=-r;z<r;z++){
+      for(const n of FACES){
+        // neighbor in image space: +Y in 3D is -y in image
+        if(occ(x+n[0],y-n[1],z+n[2]))continue;
+        c.setRGB(px[i]/255,px[i+1]/255,px[i+2]/255,THREE.SRGBColorSpace);
+        if(darkBack&&n[2]<0)c.multiplyScalar(0.7);
+        quad(x-W/2+0.5,iy+0.5,z+0.5,n);
+      }
+    }
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));
+  g.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  const mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.85,metalness:0}));
+  const name=(imageFile.name||'voxel').replace(/\.[^.]+$/,'').slice(0,40)||'voxel';
+  mesh.name=name;const group=new THREE.Group();group.name=name;group.add(mesh);ground(group);
+  show(group,null,` ${W}×${H} voxels`);
+  say(`Voxel model built: ${filled.toLocaleString()} pixels, ${(pos.length/18).toLocaleString()} faces.`,'ok');
+};
+
+/* ---------- terrain (free, in-browser) ---------- */
+$('goTerrain').onclick=async()=>{
+  if(!imageFile){say('Add a picture first. A grayscale heightmap or a top-down map both work.','err');return}
+  const n=Number($('tRes').value);const bmp=await createImageBitmap(imageFile);
+  const cv=document.createElement('canvas');cv.width=cv.height=n;const cx=cv.getContext('2d');cx.drawImage(bmp,0,0,n,n);const px=cx.getImageData(0,0,n,n).data;
+  const Hs=Number($('hScale').value),S=Number($('tSize').value),inv=$('tInvert').value==='1';
+  const L=new Float32Array(n*n);for(let i=0;i<n*n;i++){const l=(0.2126*px[i*4]+0.7152*px[i*4+1]+0.0722*px[i*4+2])/255;L[i]=inv?1-l:l}
+  const B=new Float32Array(n*n);
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){let s=0,c=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X>=0&&Y>=0&&X<n&&Y<n){s+=L[Y*n+X];c++}}B[y*n+x]=s/c}
+  const g=new THREE.PlaneGeometry(S,S,n-1,n-1);g.rotateX(-Math.PI/2);
+  const pos=g.attributes.position,col=new Float32Array(pos.count*3),tmp=new THREE.Color();
+  for(let i=0;i<pos.count;i++){pos.setY(i,B[i]*Hs);tmp.setRGB(px[i*4]/255,px[i*4+1]/255,px[i*4+2]/255,THREE.SRGBColorSpace);col[i*3]=tmp.r;col[i*3+1]=tmp.g;col[i*3+2]=tmp.b}
+  g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
+  const mesh=new THREE.Mesh(g,new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.95,metalness:0,flatShading:n<=64}));mesh.name='terrain';
+  const group=new THREE.Group();group.name='Terrain';group.add(mesh);
+  show(group,null,` ${S}×${S} m`);say(`Terrain built: ${S} m wide, up to ${Hs} m tall.`,'ok');
+};
+
+/* ---------- with Claude (copy prompt / paste reply) ---------- */
+let kind='character';
+for(const b of $('kinds').querySelectorAll('.chip'))b.onclick=()=>{kind=b.dataset.kind;for(const o of $('kinds').querySelectorAll('.chip'))o.setAttribute('aria-pressed',o===b)};
+const SCALE={
+  character:'A humanoid player character or NPC, about 1.6–1.9 m tall, standing in a neutral A-pose with arms slightly away from the body, facing +Z.',
+  creature:'A monster or creature. Pick a believable size for what it is (a rat ~0.3 m, a wolf ~0.9 m tall, a troll ~3 m). Facing +Z.',
+  weapon:'A weapon, armor piece, or piece of gear at real-world scale (sword ~1.0–1.4 m long). Stand it upright with its long axis along +Y, resting on y=0.',
+  prop:'A game prop (chest, barrel, crate, lamp, table, potion, rock, tree, etc.) at real-world scale, resting on y=0.',
+  building:'A building or structure, 4–15 m tall at real-world scale, with door(s) at human scale (~2 m). Front facing +Z.',
+  vehicle:'A vehicle (cart, boat, car, airship, etc.) at real-world scale, front facing +Z, wheels or hull resting on y=0.',
+  map:'A game map scene. Treat the picture as a level layout (top-down map, screenshot, or concept art). Build a 40 m × 40 m area: one flat ground slab first (box, top at y=0), then paths, water, hills, walls, buildings, trees and rocks laid out to match the picture.'
+};
+const COUNT={simple:[10,20],detailed:[25,45],hero:[45,80]};
+function promptText(){
+  const [lo,hi]=COUNT[$('detail').value];const max=kind==='map'?Math.min(hi+30,110):hi;const extra=$('extra').value.trim();
+  return `You are an expert low-poly 3D modeler making assets for a browser game.
+Look at the picture I attached and build a 3D model of it out of simple primitive shapes. Capture its silhouette, proportions, colors (sample them from the picture) and the details a player would recognize.
+
+ASSET TYPE: ${SCALE[kind]}
+
+COORDINATES: meters. Y is up. The asset stands on the ground (lowest point at y=0), centered on x=0, z=0. Front faces +Z, the asset's left side is -X.
+Every part: "pos" is the CENTER of the shape, "size" is [width X, height Y, depth Z], "rot" is [x,y,z] rotation in degrees (optional).
+
+SHAPES: "box", "cylinder" (vertical; optional "taper" = top radius ÷ bottom radius), "cone" (point up), "sphere" (ellipsoid when size is uneven), "wedge" (ramp: full height at -Z sloping to zero at +Z; roofs, blades), "torus" (ring in the XY plane).
+MATERIAL per part: "color" hex, "metal" 0–1, "rough" 0–1, optional "glow" 0–1.5 for light-emitting bits.
+
+RULES:
+- Use between ${lo} and ${max} parts.
+- Mirror left/right parts exactly when the subject is symmetric.
+- Parts must touch or overlap slightly so nothing floats, unless it really floats.
+- Prefer a few well-proportioned shapes over many tiny ones; use rotation for angled limbs, blades and roofs.
+- Name parts in snake_case with _L/_R for sides.
+${extra?`- Also: ${extra}\n`:''}
+Reply with ONLY the JSON in a single code block, no other text, in exactly this shape:
+{"name":"Short Asset Name","kind":"${kind}","parts":[{"name":"torso","shape":"box","pos":[0,1.1,0],"size":[0.45,0.55,0.25],"rot":[0,0,0],"color":"#7a4b2a","metal":0.1,"rough":0.8}]}`;
+}
+async function copyText(txt,box,okMsg){
+  try{await navigator.clipboard.writeText(txt);say(okMsg,'ok')}
+  catch{box.hidden=false;box.value=txt;box.focus();box.select();say('Copy was blocked. The text is selected. Press Ctrl+C (or Cmd+C).','err')}
+}
+$('copyPrompt').onclick=()=>copyText(promptText(),$('promptBox'),'Prompt copied. Paste it into Claude and attach your picture.');
+function pullJson(text){
+  const tries=[text];const f=text.match(/```(?:json)?\s*([\s\S]*?)```/);if(f)tries.push(f[1]);
+  const a=text.indexOf('{'),b=text.lastIndexOf('}');if(a>=0&&b>a)tries.push(text.slice(a,b+1));
+  for(const t of tries){try{return JSON.parse(t)}catch{}}return null;
+}
+$('goPaste').onclick=()=>{
+  const spec=pullJson($('paste').value);
+  if(!spec||!Array.isArray(spec.parts)||!spec.parts.length){say('That does not look like a parts list. Copy Claude\'s whole reply and paste it again.','err');return}
+  spec.name=String(spec.name||'Asset').slice(0,60);
+  show(buildFromSpec(spec),spec,' '+(spec.kind||''));say(`Built ${spec.name}: ${spec.parts.length} parts.`,'ok');
+};
+
+/* ---------- export ---------- */
+const fileBase=()=>currentName.replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'_')||'asset';
+let dl=null;
+(async()=>{try{dl=window.claude?await window.claude.use('downloads'):null}catch{dl=null}})();
+function plainSave(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+// returns 'saved' | 'declined' | 'blocked'
+async function saveBlob(blob,name){
+  if(!dl){plainSave(blob,name);return 'saved'}
+  try{await dl.save({filename:name,data:blob});return 'saved'}
+  catch(e){if(e?.code==='declined')return 'declined';if(e?.code==='rejected_extension'||e?.code==='extension_not_enabled')return 'blocked';throw e}
+}
+function exportGlb(){return new Promise((res,rej)=>{const clone=current.clone(true);
+  clone.traverse(o=>{if(o.isMesh){o.material=o.material.clone();o.material.wireframe=false}}); // always solid, never lines
+  new GLTFExporter().parse(clone,r=>res(new Uint8Array(r)),rej,{binary:true})})}
+$('saveGlb').onclick=async()=>{
+  let glb;try{glb=await exportGlb()}catch{say('Could not build the .glb. Try again.','err');return}
+  try{
+    let r=await saveBlob(new Blob([glb],{type:'model/gltf-binary'}),fileBase()+'.glb');
+    if(r==='saved')return say(fileBase()+'.glb downloaded.','ok');
+    if(r==='declined')return say('Download cancelled.');
+    // this host refuses .glb files: hand it over inside a .zip
+    r=await saveBlob(zip([{name:fileBase()+'.glb',data:glb}]),fileBase()+'.zip');
+    say(r==='saved'?fileBase()+'.zip downloaded. Unzip it to get the .glb.':'Download cancelled.',r==='saved'?'ok':'');
+  }catch{say('The download did not go through. Try again.','err')}
+};
+$('saveJson').onclick=async()=>{if(!currentSpec){say('Voxel and terrain models have no parts list. Use Download .glb.','err');return}
+  try{const r=await saveBlob(new Blob([JSON.stringify(currentSpec,null,2)],{type:'application/json'}),fileBase()+'.parts.json');
+    say(r==='saved'?fileBase()+'.parts.json downloaded.':'Download cancelled.',r==='saved'?'ok':'')}catch{say('The download did not go through. Try again.','err')}};
+$('copyJson').onclick=()=>{if(!currentSpec){say('Voxel and terrain models have no parts list. Use Download .glb.','err');return}
+  copyText(JSON.stringify(currentSpec),$('promptBox'),'Parts JSON copied. Paste it into Claude with the change you want.')};
+
+/* store-only zip, used only where .glb can't be saved directly */
+function crc32(u){let c=~0;for(let i=0;i<u.length;i++){c^=u[i];for(let k=0;k<8;k++)c=(c>>>1)^(0xEDB88320&-(c&1))}return (~c)>>>0}
+function zip(files){
+  const enc=new TextEncoder(),out=[],cen=[];let off=0;
+  for(const f of files){const nm=enc.encode(f.name),crc=crc32(f.data),n=f.data.length;
+    const h=new DataView(new ArrayBuffer(30));h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(12,0x21,true);h.setUint32(14,crc,true);h.setUint32(18,n,true);h.setUint32(22,n,true);h.setUint16(26,nm.length,true);
+    out.push(new Uint8Array(h.buffer),nm,f.data);
+    const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(14,0x21,true);c.setUint32(16,crc,true);c.setUint32(20,n,true);c.setUint32(24,n,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    cen.push(new Uint8Array(c.buffer),nm);off+=30+nm.length+n}
+  const cs=cen.reduce((a,b)=>a+b.length,0);const e=new DataView(new ArrayBuffer(22));e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new Blob([...out,...cen,new Uint8Array(e.buffer)],{type:'application/zip'});
+}
+</script>
+</body>
+</html>
